@@ -26,6 +26,7 @@ export interface FollowList {
     authorName?: string;
     authorPicture?: string;
     description?: string;
+    topic?: string;
 }
 
 /**
@@ -46,6 +47,10 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
         // Get the cover image from the image tag
         const imageTag = event.tags.find(tag => tag[0] === 'image');
         const coverImageUrl = imageTag && imageTag[1] ? imageTag[1] : '';
+
+        // Get the topic from the t tag
+        const topicTag = event.tags.find(tag => tag[0] === 't');
+        const topic = topicTag && topicTag[1] ? topicTag[1] : '';
 
         // Parse the content (JSON with description)
         let description = '';
@@ -84,6 +89,7 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
             entries,
             createdAt: event.created_at || 0,
             description,
+            topic,
         };
     } catch (error) {
         console.error('Error parsing follow list event:', error);
@@ -120,6 +126,11 @@ export async function createFollowListEvent(followList: Omit<FollowList, 'eventI
     // set the description as a "description" tag
     if (followList.description) {
         event.tags.push(['description', followList.description]);
+    }
+
+    // set the topic as a "t" tag
+    if (followList.topic) {
+        event.tags.push(['t', followList.topic]);
     }
 
     // Add the created at tag to current timestamp

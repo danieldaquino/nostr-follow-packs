@@ -19,10 +19,11 @@
   let name = '';
   let coverImageUrl = '';
   let description = '';
+  let topic = '';
   let searchQuery = '';
   let searching = false;
-  let searchResults: UserSearchResult[] = [];
-  let selectedEntries: FollowListEntry[] = [];
+  let searchResults: ProfileSearchResult[] = [];
+  let selectedEntries: SelectedEntry[] = [];
   let submitting = false;
   let error = '';
   let duplicateEntryError = false;
@@ -38,6 +39,7 @@
   
   // Validation state
   let nameValid = true;
+  let topicValid = true;
   let entriesValid = true;
   
   onMount(async () => {
@@ -112,6 +114,7 @@
       name = list.name;
       coverImageUrl = list.coverImageUrl;
       description = list.description || '';
+      topic = list.topic || '';
       listId = list.id;
       listEventId = list.eventId;
       selectedEntries = [...list.entries];
@@ -125,7 +128,7 @@
         entry.nip05 = profile.nip05;
       });
       
-      logDebug('Loaded existing list for editing:', { id, name, entries: selectedEntries.length });
+      logDebug('Loaded existing list for editing:', { id, name, topic, entries: selectedEntries.length });
     } catch (err: any) {
       console.error('Error loading follow list for editing:', err);
       error = `Error loading list: ${err.message || 'Unknown error'}`;
@@ -294,14 +297,13 @@
   
   // Handle form submission
   async function handleSubmit() {
-    // Reset validation
-    nameValid = !!name.trim();
-    entriesValid = selectedEntries.length > 0;
+    // Validate form
+    const isValid = validateForm();
     
-    logDebug('Form submission - validation:', { nameValid, entriesValid });
+    logDebug('Form submission - validation:', { nameValid, topicValid, entriesValid });
     
     // Check validation
-    if (!nameValid || !entriesValid) {
+    if (!isValid) {
       error = 'Please fix the validation errors and try again.';
       logDebug('Validation failed:', error);
       return;
@@ -314,7 +316,7 @@
     
     try {
       // Publish the follow list (same method for create and edit)
-      const event = await publishFollowList(name, coverImageUrl, selectedEntries, editMode ? listId : undefined, description);
+      const event = await publishFollowList(name, coverImageUrl, selectedEntries, editMode ? listId : undefined, description, topic);
       logDebug('Published event with ID:', event?.id);
       if (event) {
         // Navigate to the new follow list
@@ -350,8 +352,17 @@
     showRemoveAllConfirm = false;
   }
 
-  // Function to handle input changes in the search box
+  // Function to validate form fields
+  function validateForm() {
+    nameValid = name.trim().length > 0;
+    topicValid = topic !== '';
+    entriesValid = selectedEntries.length > 0;
+    return nameValid && topicValid && entriesValid;
+  }
+
+  // Function to handle input changes
   function handleInputChange() {
+    // If we're searching, abort the search
     if (searching) {
       logDebug('Input changed, aborting search.');
       searching = false;
@@ -359,6 +370,9 @@
       noSearchResults = false;
       error = ''; // Clear any search error
     }
+    
+    // Validate form fields as user types
+    validateForm();
   }
 </script>
 
@@ -469,9 +483,42 @@
             <textarea
               id="description"
               bind:value={description}
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-              placeholder="Enter a description for this follow list"
+              on:input={handleInputChange}
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+              rows="4"
             ></textarea>
+          </div>
+      
+          <div class="mb-6">
+            <label for="topic" class="block text-sm font-medium text-gray-700 mb-1">
+              Topic <span class="text-red-500">*</span>
+            </label>
+            <select
+              id="topic"
+              bind:value={topic}
+              on:change={handleInputChange}
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+              required
+            >
+              <option value="" disabled selected>Select a topic</option>
+              <option value="bitcoin">Bitcoin - Bitcoin-related topics (e.g. Bitcoin, Lightning, e-cash etc)</option>
+              <option value="technology">Technology - Any non-Bitcoin technology-related topic (e.g. Linux, new releases, software development, etc)</option>
+              <option value="science">Science - Any science-related topic (e.g. astronomy, biology, physics, etc)</option>
+              <option value="lifestyle">Lifestyle - Lifestyle topics (e.g. Worldschooling, Digital nomading, homesteading, etc)</option>
+              <option value="travel">Travel - Travel-related topics (e.g. Information about locations to visit, travel logs, etc)</option>
+              <option value="art">Art - Any art-related topic (e.g. poetry, painting, sculpting, photography, etc)</option>
+              <option value="health">Health - Topics focused on improving human health (e.g. medicine, exercising, nutrition, etc)</option>
+              <option value="music">Music - Any music-related topic (e.g. Bands, fan pages, instruments, music theory, etc)</option>
+              <option value="food">Food - Any topic related to food (e.g. Cooking, recipes, meal planning, nutrition)</option>
+              <option value="sports">Sports - Any topic related to sports (e.g. Athlete fan pages, sports news, etc)</option>
+              <option value="religion-spirituality">Religion & Spirituality - Any topic related to religion or spirituality</option>
+              <option value="humanities">Humanities - General humanities topics (e.g. philosophy, sociology, culture, etc)</option>
+              <option value="politics">Politics - General topics about politics</option>
+              <option value="other">Other - Miscellaneous topics that do not fit in any of the previous categories</option>
+            </select>
+            {#if !topicValid}
+              <p class="mt-1 text-sm text-red-600">Please select a topic</p>
+            {/if}
           </div>
           
           {#if coverImageUrl}

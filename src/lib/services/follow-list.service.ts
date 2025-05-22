@@ -196,9 +196,10 @@ export async function publishFollowList(
     coverImageUrl: string,
     entries: FollowListEntry[],
     id: string | undefined,
-    description?: string
+    description?: string,
+    topic?: string
 ): Promise<NDKEvent | null> {
-    logDebug('Publishing follow list:', { name, coverImageUrl, entries: entries.length, description });
+    logDebug('Publishing follow list:', { name, coverImageUrl, entries: entries.length, description, topic });
 
     try {
         // Get the current user
@@ -217,7 +218,8 @@ export async function publishFollowList(
             coverImageUrl,
             pubkey: '', // Will be set by the signer
             entries,
-            description
+            description,
+            topic
         };
 
         const event = await createFollowListEvent(followList);
