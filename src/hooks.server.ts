@@ -19,8 +19,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Create a directory for storing generated preview images
-// Use an absolute path that doesn't change based on server file location
-const CACHE_DIR = path.join(process.cwd(), 'static/preview-images');
+// Use a writable directory in serverless environments
+const CACHE_DIR = process.env.VERCEL 
+    ? '/tmp/preview-images' 
+    : path.join(process.cwd(), 'static/preview-images');
 if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
@@ -152,7 +154,7 @@ export const handle: Handle = async ({ event, resolve }) => {
             <meta charset="utf-8" />
             <meta property="og:title" content="Following._ ${followList.name}" />
             <meta property="og:description" content="${followList.description || `A Nostr Follow Pack with ${followList.entries.length} people`}" />
-            <meta property="og:image" content="${url.origin.replace('http:', 'https:')}${relativeImagePath}" />
+            <meta property="og:image" content="${url.origin.replace('http:', 'https:')}${process.env.VERCEL ? `/api/preview-image/${listId}` : relativeImagePath}" />
             <meta property="og:url" content="${url.href.replace('http:', 'https:')}" />
             <meta property="og:type" content="website" />
             <meta property="og:site_name" content="Following._" />
@@ -161,7 +163,7 @@ export const handle: Handle = async ({ event, resolve }) => {
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:title" content="Following._ ${followList.name}" />
             <meta name="twitter:description" content="${followList.description || `A Nostr Follow Pack with ${followList.entries.length} people`}" />
-            <meta name="twitter:image" content="${url.origin.replace('http:', 'https:')}${relativeImagePath}" />
+            <meta name="twitter:image" content="${url.origin.replace('http:', 'https:')}${process.env.VERCEL ? `/api/preview-image/${listId}` : relativeImagePath}" />
           `;
 
                 // Remove all meta tags with property="og:*" and property="twitter:*" and insert our meta tags into the HTML head
